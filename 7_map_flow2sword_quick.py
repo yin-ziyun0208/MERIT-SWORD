@@ -38,16 +38,12 @@ for pfaf in range(1,2):
     idmatch = idmatch.astype('int')
 
     # 过滤出包含当前pfaf COMID的行
-    #2d array维度为230000*40，其中只有一些行里面的数值包含预先设定的一个unique id的1维array，叫做unique_id。请问如何把2d array减少到包含unique_id数值（而非列名）的那些行？
     mask = np.any(np.isin(idmatch, idnow), axis=1)
     data = idmatch[mask]  #存储了sword和comid对应的关系表
     weight_now = weight[mask] #存储了sword和comid对应的权重关系表
     weight = weight_now[:,1:] #去除了前面存储的
     sword_final = data[:,0]
     nsword = len(sword_final)
-    # breakpoint()
-    # print(data[data[:,0]==62210000745])
-    # print(weight_now[data[:,0]==62210000745])
 
 
     # --- 4. 映射COMID到索引 ---
@@ -60,14 +56,12 @@ for pfaf in range(1,2):
 
     # --- ！！！5. 根据索引直接把qq值塞回数组，并利用矩阵的乘法来加速整个过程 ！！！ ----
     print('... extracting qq to matrix based on the index ...')
-    #我有一个数组叫qq，记录了流量数据，维度是(1095, 48362)，第一维是时间，第二维是id号码。我有另外一个二维数组叫index，维度是(39528, 40)，它记录了每个元素在qq第二维度中的index（该index值小于48362，-1代表无效索引）。现在，我想按照index记录的索引，把qq的数值返回到维度为（39528，40）的数组中，同时把不同时间的也记录下来，最终返回一个维度为（39528，40，1095）的数组result。请问如何做
-    # 使用向量化操作优化
+    
     valid_mask = comid_indices != -1  # 创建一个布尔掩码，标记有效索引
     rows, cols = np.where(valid_mask)  # 获取所有有效索引的行和列
     # 初始化结果数组
     result = np.full((nsword, 40, ntime), np.nan) #result = np.full((39528, 40, 1095), np.nan)
-    # 使用向量化操作填充有效值
-    # breakpoint()
+
     result[rows, cols, :] = qq[:, comid_indices[valid_mask]].T
     result[result<0] = 0
     result[np.isnan(result)] = 0
@@ -77,12 +71,8 @@ for pfaf in range(1,2):
 
     # --- ！！！6. 利用NumPy 的广播和向量化操作，高效进行多维数组的运算，直接获得结果 ---
     print('... calculating weighted flow ...')
-    #两个data frame，一个叫result，维度为(39528, 40, 1095)；另外一个叫weight，维度是(39528, 40)。我需要用result中所有行列对应元素与weight对应元素相乘，对最后针对每一行求和。最终得到数组是(39528, 1095)。请问如何实现
-    # 扩展 weight 的维度，使其变为 (39528, 40, 1)
     weight_expanded = weight[:, :, np.newaxis]
-    # 逐元素相乘
     weighted_result = result * weight_expanded
-    # 按行求和，得到最终的 (39528, 1095) 数组
     final_result = np.sum(weighted_result, axis=1)
 
 
