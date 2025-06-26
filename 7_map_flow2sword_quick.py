@@ -4,7 +4,7 @@ import pandas as pd
 import time
 import datetime
 
-for pfaf in range(1,2):
+for pfaf in range(1,9):
     # pfaf = 6
     print('--- PFAF = %02d ---'%pfaf)
 
@@ -14,7 +14,7 @@ for pfaf in range(1,2):
 
     idmatch[idmatch == 0] = np.nan
     arr = idmatch[:,1:]
-    unique_id = np.unique(arr[~np.isnan(arr)]).astype('int64') #记录所有unique的COMID
+    unique_id = np.unique(arr[~np.isnan(arr)]).astype('int64') 
     sword = idmatch[:,0].astype('int64')
 
     # --- 2. 读取MERIT径流数据 ---
@@ -46,30 +46,20 @@ for pfaf in range(1,2):
     nsword = len(sword_final)
 
 
-    # --- 4. 映射COMID到索引 ---
     print('... creating index for each COMID ...')
-    # 创建COMID到qq列索引的字典
     idnow_to_index = {cid: idx for idx, cid in enumerate(idnow)}
-    # 将data中的COMID转换为qq中的列索引
     comid_indices = np.vectorize(lambda x: idnow_to_index.get(x, -1))(data[:, 1:])  # 无效索引为-1
 
-
-    # --- ！！！5. 根据索引直接把qq值塞回数组，并利用矩阵的乘法来加速整个过程 ！！！ ----
     print('... extracting qq to matrix based on the index ...')
     
-    valid_mask = comid_indices != -1  # 创建一个布尔掩码，标记有效索引
-    rows, cols = np.where(valid_mask)  # 获取所有有效索引的行和列
-    # 初始化结果数组
-    result = np.full((nsword, 40, ntime), np.nan) #result = np.full((39528, 40, 1095), np.nan)
+    valid_mask = comid_indices != -1  
+    rows, cols = np.where(valid_mask) 
+    result = np.full((nsword, 40, ntime), np.nan) 
 
     result[rows, cols, :] = qq[:, comid_indices[valid_mask]].T
     result[result<0] = 0
     result[np.isnan(result)] = 0
-    # --- 至此获得了维度为(nsword, 40, ntime)的三维矩阵，里面的值为根据索引取出来的qq ---
 
-
-
-    # --- ！！！6. 利用NumPy 的广播和向量化操作，高效进行多维数组的运算，直接获得结果 ---
     print('... calculating weighted flow ...')
     weight_expanded = weight[:, :, np.newaxis]
     weighted_result = result * weight_expanded
@@ -90,7 +80,7 @@ for pfaf in range(1,2):
     sword_var.long_name = "SWORD reach identifier"
     sword_var[:] = sword_final
 
-    # 时间变量（假设2023年每日数据）
+
     start_date = datetime.datetime(2022,1,1)
     time_days = np.arange(ntime)
     time_var = output_nc.createVariable('time', 'f4', ('time',))
