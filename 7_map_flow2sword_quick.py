@@ -25,9 +25,9 @@ for pfaf in range(1,2):
     qout = nc.variables['Qout'][:]
 
     # 筛选当前pfaf区域的COMID
-    idnow = unique_id[(unique_id>=pfaf*10000000)&(unique_id<=(pfaf+1)*10000000)] #找到当前pfaf区域内的unique comid
-    index = np.searchsorted(comid,idnow) #对于idnow，找到每个元素在comid中的index
-    qq = qout[:,index] #取出所有和sword match的comid的qout
+    idnow = unique_id[(unique_id>=pfaf*10000000)&(unique_id<=(pfaf+1)*10000000)] 
+    index = np.searchsorted(comid,idnow) 
+    qq = qout[:,index] 
     newcomid = comid[index]
     ntime = qq.shape[0]
 
@@ -39,9 +39,9 @@ for pfaf in range(1,2):
 
     # 过滤出包含当前pfaf COMID的行
     mask = np.any(np.isin(idmatch, idnow), axis=1)
-    data = idmatch[mask]  #存储了sword和comid对应的关系表
-    weight_now = weight[mask] #存储了sword和comid对应的权重关系表
-    weight = weight_now[:,1:] #去除了前面存储的
+    data = idmatch[mask] 
+    weight_now = weight[mask] 
+    weight = weight_now[:,1:]
     sword_final = data[:,0]
     nsword = len(sword_final)
 
